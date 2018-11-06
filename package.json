@@ -1,0 +1,22 @@
+{
+  "name": "relection",
+  "version": "0.0.1",
+  "description": "Trustless relay network election",
+  "main": "index.js",
+  "scripts": {
+    "test": "truffle test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/s1na/relection.git"
+  },
+  "author": "Sina Mahmoodi",
+  "license": "LGPL-3.0-or-later",
+  "bugs": {
+    "url": "https://github.com/s1na/relection/issues"
+  },
+  "homepage": "https://github.com/s1na/relection#readme",
+  "devDependencies": {
+    "truffle": "^5.0.0-beta.1"
+  }
+}
