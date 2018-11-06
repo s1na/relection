@@ -4,7 +4,7 @@ contract Relection {
   event Registered(address addr);
 
   struct Relayer {
-    uint256 registered;
+    uint256 registrationTime;
     uint256 deposit;
   }
 
@@ -13,11 +13,16 @@ contract Relection {
 
   uint256 constant STAKE_AMOUNT = 1 ether;
 
+  modifier isRegistered(address _relayer) {
+    require(relayers[msg.sender].registrationTime != 0, "Relayer not registered");
+    _;
+  }
+
   /**
    * @dev Registers a relayer, if enough stake is deposited.
    */
   function register() public payable {
-    require(relayers[msg.sender].registered == 0, "Relayer already registered");
+    require(relayers[msg.sender].registrationTime == 0, "Relayer already registered");
     require(msg.value == STAKE_AMOUNT, "Incorrect deposit value");
 
     Relayer memory r = Relayer(now, msg.value);
@@ -31,9 +36,7 @@ contract Relection {
    * @dev Returns true if relayer can submit txes this block.
    * @param _addr Address of relayer
    */
-  function canSubmit(address _addr) public view returns (bool) {
-    require(relayers[msg.sender].registered != 0, "Relayer not registered");
-
+  function canSubmit(address _addr) public view isRegistered(_addr) returns (bool) {
     uint256 seed = uint256(blockhash(block.number-1));
     uint i = seed % relayerArray.length;
 
@@ -43,9 +46,7 @@ contract Relection {
   /**
    * @dev Delists relayer and returns their deposit.
    */
-  function withdraw() public {
-    require(relayers[msg.sender].registered != 0, "Relayer not registered");
-
+  function withdraw() public isRegistered(msg.sender) {
     msg.sender.transfer(relayers[msg.sender].deposit);
 
     uint i = relayerIndex(msg.sender);
