@@ -35,9 +35,10 @@ contract Relection {
   /**
    * @dev Returns true if relayer can submit txes this block.
    * @param _addr Address of relayer
+   * @param _salt 32 bytes of salt, e.g. tx hash which should be relayed.
    */
-  function canSubmit(address _addr) public view isRegistered(_addr) returns (bool) {
-    uint256 seed = uint256(blockhash(block.number-1));
+  function canSubmit(address _addr, bytes32 _salt) public view isRegistered(_addr) returns (bool) {
+    uint256 seed = uint256(keccak256(abi.encodePacked(blockhash(block.number-1), _salt)));
     uint i = seed % relayerArray.length;
 
     return _addr == relayerArray[i];
