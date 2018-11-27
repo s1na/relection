@@ -18,7 +18,7 @@ contract('Relection', async (accounts) => {
 
   it('should not be able to submit with no relayers', async () => {
     try {
-      await instance.canSubmit.call(r1, web3.utils.randomHex(32), { from: r1 })
+      await instance.canSubmit.call(r1, { from: r1 })
       assert.fail('Expected revert not received')
     } catch (e) {
       const revertFound = e.message.search('revert') >= 0
@@ -50,7 +50,7 @@ contract('Relection', async (accounts) => {
   })
 
   it('should be able to submit', async () => {
-    let ok = await instance.canSubmit.call(r1, web3.utils.randomHex(32), { from: r1 })
+    let ok = await instance.canSubmit.call(r1, { from: r1 })
     assert.isTrue(ok)
   })
 
