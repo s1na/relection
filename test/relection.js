@@ -16,9 +16,9 @@ contract('Relection', async (accounts) => {
     assert.equal(relayersCount, 0)
   })
 
-  it('should not be able to submit with no relayers', async () => {
+  it('should not elect non-registered relayer', async () => {
     try {
-      await instance.canSubmit.call(r1, { from: r1 })
+      await instance.isElected.call(r1, { from: r1 })
       assert.fail('Expected revert not received')
     } catch (e) {
       const revertFound = e.message.search('revert') >= 0
@@ -49,8 +49,8 @@ contract('Relection', async (accounts) => {
     assert.equal(relayer, r1)
   })
 
-  it('should be able to submit', async () => {
-    let ok = await instance.canSubmit.call(r1, { from: r1 })
+  it('should elect relayer', async () => {
+    let ok = await instance.isElected.call(r1, { from: r1 })
     assert.isTrue(ok)
   })
 
@@ -98,15 +98,15 @@ contract('Relection multiple relayers', async (accounts) => {
       // Set block number on mocked contract
       await instance.setBlockNumber(blockNum)
 
-      // Index of relayer who is allowed to submit during this block
+      // Index of relayer who is elected during this block
       let elected = seeds[(await instance.getPeriodStart()).toNumber() - 1]
 
-      // Only elected relayer should be able to submit, not others
-      let ok = await instance.canSubmit.call(relayers[elected])
+      // Only one relayer should be elected
+      let ok = await instance.isElected.call(relayers[elected])
       assert.isTrue(ok)
-      ok = await instance.canSubmit.call(relayers[(elected + 1) % 3])
+      ok = await instance.isElected.call(relayers[(elected + 1) % 3])
       assert.isFalse(ok)
-      ok = await instance.canSubmit.call(relayers[(elected + 2) % 3])
+      ok = await instance.isElected.call(relayers[(elected + 2) % 3])
       assert.isFalse(ok)
     }
   })

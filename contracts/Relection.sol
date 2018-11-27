@@ -37,10 +37,10 @@ contract Relection {
   }
 
   /**
-   * @dev Returns true if relayer can submit txes this block.
+   * @dev Returns true if relayer is elected.
    * @param _addr Address of relayer
    */
-  function canSubmit(address _addr) public view isRegistered(_addr) returns (bool) {
+  function isElected(address _addr) public view isRegistered(_addr) returns (bool) {
     uint256 periodStart = getPeriodStart();
     uint256 seed = getSeed(periodStart - 1);
     uint256 i = seed % relayerArray.length;
