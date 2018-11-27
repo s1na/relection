@@ -11,10 +11,14 @@ contract Relection {
   mapping (address => Relayer) public relayers;
   address[] public relayerArray;
 
+  // Amount of stake required on registration.
   uint256 constant STAKE_AMOUNT = 1 ether;
 
+  // Length of period during which a relayer is allowed to submit.
+  uint256 constant PERIOD_LENGTH = 5;
+
   modifier isRegistered(address _relayer) {
-    require(relayers[msg.sender].registrationTime != 0, "Relayer not registered");
+    require(relayers[_relayer].registrationTime != 0, "Relayer not registered");
     _;
   }
 
@@ -37,8 +41,9 @@ contract Relection {
    * @param _addr Address of relayer
    */
   function canSubmit(address _addr) public view isRegistered(_addr) returns (bool) {
-    uint256 seed = uint256(blockhash(block.number-1));
-    uint i = seed % relayerArray.length;
+    uint256 periodStart = getPeriodStart();
+    uint256 seed = getSeed(periodStart - 1);
+    uint256 i = seed % relayerArray.length;
 
     return _addr == relayerArray[i];
   }
@@ -49,20 +54,37 @@ contract Relection {
   function withdraw() public isRegistered(msg.sender) {
     msg.sender.transfer(relayers[msg.sender].deposit);
 
-    uint i = relayerIndex(msg.sender);
+    uint256 i = relayerIndex(msg.sender);
     delete relayers[msg.sender];
     delete relayerArray[i];
   }
 
   /**
+   * @dev Returns start of the current period.
+   */
+  function getPeriodStart() public view returns (uint256) {
+    uint256 bn = getBlockNumber();
+    uint256 blockInPeriod = bn % PERIOD_LENGTH;
+    return bn - blockInPeriod;
+  }
+
+  /**
    * @dev Returns number of relayers.
    */
-  function relayersCount() public view returns (uint) {
+  function relayersCount() public view returns (uint256) {
     return relayerArray.length;
   }
 
-  function relayerIndex(address _addr) internal view returns (uint) {
-    uint i = 0;
+  function getBlockNumber() internal view returns (uint256) {
+    return block.number;
+  }
+
+  function getSeed(uint256 blockNum) internal view returns (uint256) {
+    return uint256(blockhash(blockNum));
+  }
+
+  function relayerIndex(address _addr) internal view returns (uint256) {
+    uint256 i = 0;
     while (relayerArray[i] != _addr) {
       i++;
     }
