@@ -6,9 +6,15 @@ const ZERO_ADDR = '0x0000000000000000000000000000000000000000'
 contract('Relection', async (accounts) => {
   let instance
   let r1 = accounts[1]
+  let r2 = accounts[2]
 
   before(async () => {
-    instance = await Relection.new()
+    instance = await RelectionMock.new()
+
+    // Set "random" seed for blocknumbers
+    await instance.setSeed(4, 0)
+    await instance.setSeed(9, 0)
+    await instance.setSeed(14, 0)
   })
 
   it('should have no relayers initially', async () => {
@@ -17,8 +23,11 @@ contract('Relection', async (accounts) => {
   })
 
   it('should not elect non-registered relayer', async () => {
+    let elect = await instance.getElect()
+    assert.equal(elect, ZERO_ADDR)
+
     try {
-      await instance.isElected.call(r1, { from: r1 })
+      await instance.isElected.call(r1)
       assert.fail('Expected revert not received')
     } catch (e) {
       const revertFound = e.message.search('revert') >= 0
@@ -37,7 +46,10 @@ contract('Relection', async (accounts) => {
   })
 
   it('should register', async () => {
-    await instance.register({ from: r1, value: web3.utils.toWei('1', 'ether') })
+    await instance.setBlockNumber(7)
+    let tx = await instance.register({ from: r1, value: web3.utils.toWei('1', 'ether') })
+    let activeSince = tx.logs[0].args.activeSince.toNumber()
+    assert.equal(activeSince, 10)
 
     let balance = await web3.eth.getBalance(instance.address)
     assert.equal(balance, web3.utils.toWei('1', 'ether'))
@@ -49,12 +61,55 @@ contract('Relection', async (accounts) => {
     assert.equal(relayer, r1)
   })
 
-  it('should elect relayer', async () => {
-    let ok = await instance.isElected.call(r1, { from: r1 })
+  it('should not be elected until next period', async () => {
+    await instance.setBlockNumber(9)
+
+    let elect = await instance.getElect()
+    assert(elect, ZERO_ADDR)
+
+    let ok = await instance.isElected.call(r1)
+    assert.isFalse(ok)
+  })
+
+  it('should elect relayer in the next period', async () => {
+    await instance.setBlockNumber(10)
+
+    let elect = await instance.getElect()
+    assert.equal(elect, r1)
+
+    let ok = await instance.isElected.call(r1)
     assert.isTrue(ok)
   })
 
-  it('should withdraw', async () => {
+  it('should deregister', async () => {
+    await instance.deregister({ from: r1 })
+  })
+
+  it('should remain elect before deactivation', async () => {
+    await instance.setBlockNumber(14)
+    let elect = await instance.getElect()
+    assert(elect, r1)
+  })
+
+  it('should not withdraw before deactivation', async () => {
+    await instance.setBlockNumber(14)
+    try {
+      await instance.withdraw({ from: r1 })
+      assert.fail('Expected revert not received')
+    } catch (e) {
+      const revertFound = e.message.search('revert') >= 0
+      assert(revertFound, `Expected "revert", got ${e} instead`)
+    }
+  })
+
+  it('should not be elected after deactivation', async () => {
+    await instance.setBlockNumber(15)
+    let elect = await instance.getElect()
+    assert(elect, ZERO_ADDR)
+  })
+
+  it('should withdraw after deactivation', async () => {
+    await instance.setBlockNumber(15)
     await instance.withdraw({ from: r1 })
 
     let balance = await web3.eth.getBalance(instance.address)
@@ -62,6 +117,13 @@ contract('Relection', async (accounts) => {
 
     let relayer = await instance.relayerArray.call(0)
     assert.equal(relayer, ZERO_ADDR)
+  })
+
+  it('should not activate when registering two blocks before next period', async () => {
+    await instance.setBlockNumber(8)
+    let tx = await instance.register({ from: r2, value: web3.utils.toWei('1', 'ether') })
+    let activeSince = tx.logs[0].args.activeSince.toNumber()
+    assert.equal(activeSince, 15)
   })
 })
 
@@ -75,7 +137,9 @@ contract('Relection multiple relayers', async (accounts) => {
 
   it('should register relayers', async () => {
     for (let i = 0; i < relayers.length; i++) {
-      await instance.register({ from: relayers[i], value: web3.utils.toWei('1', 'ether') })
+      let tx = await instance.register({ from: relayers[i], value: web3.utils.toWei('1', 'ether') })
+      let activeSince = tx.logs[0].args.activeSince.toNumber()
+      assert.equal(activeSince, 5)
     }
 
     let balance = await web3.eth.getBalance(instance.address)
