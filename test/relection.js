@@ -125,6 +125,13 @@ contract('Relection', async (accounts) => {
     let activeSince = tx.logs[0].args.activeSince.toNumber()
     assert.equal(activeSince, 15)
   })
+
+  it('should not deactivate when withdrawing two blocks before next period', async () => {
+    await instance.setBlockNumber(18)
+    let tx = await instance.deregister({ from: r2 })
+    let deactiveSince = tx.logs[0].args.deactiveSince.toNumber()
+    assert.equal(deactiveSince, 25)
+  })
 })
 
 contract('Relection multiple relayers', async (accounts) => {

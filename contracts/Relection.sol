@@ -2,6 +2,7 @@ pragma solidity ^0.4.24;
 
 contract Relection {
   event Registered(address addr, uint256 activeSince);
+  event Deregistered(address addr, uint256 deactiveSince);
 
   struct Relayer {
     uint256 registrationTime;
@@ -103,7 +104,12 @@ contract Relection {
     require(r.deactiveSince == 0, "Relayer has been already deregistered");
 
     uint256 deactiveSince = getPeriodStart() + PERIOD_LENGTH;
+    if (getBlockNumber() >= deactiveSince - 2) {
+      deactiveSince += PERIOD_LENGTH;
+    }
     r.deactiveSince = deactiveSince;
+
+    emit Deregistered(msg.sender, r.deactiveSince);
   }
 
   /**
