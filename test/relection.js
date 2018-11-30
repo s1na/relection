@@ -115,8 +115,8 @@ contract('Relection', async (accounts) => {
     let balance = await web3.eth.getBalance(instance.address)
     assert.equal(balance, web3.utils.toWei('0', 'ether'))
 
-    let relayer = await instance.relayerArray.call(0)
-    assert.equal(relayer, ZERO_ADDR)
+    let relayersCount = await instance.relayersCount.call()
+    assert.equal(relayersCount, 0)
   })
 
   it('should not activate when registering two blocks before next period', async () => {

@@ -10,6 +10,8 @@ contract Relection {
     uint256 activeSince;
     // Block number after which relayer won't be considered for election
     uint256 deactiveSince;
+    // Index in relayerArray
+    uint256 index;
   }
 
   mapping (address => Relayer) public relayers;
@@ -42,9 +44,9 @@ contract Relection {
       activeSince += PERIOD_LENGTH;
     }
 
-    Relayer memory r = Relayer(now, msg.value, activeSince, 0);
+    uint256 index = relayerArray.push(msg.sender) - 1;
+    Relayer memory r = Relayer(now, msg.value, activeSince, 0, index);
     relayers[msg.sender] = r;
-    relayerArray.push(msg.sender);
 
     emit Registered(msg.sender, activeSince);
   }
@@ -114,9 +116,7 @@ contract Relection {
 
     msg.sender.transfer(r.deposit);
 
-    uint256 i = relayerIndex(msg.sender);
-    delete relayers[msg.sender];
-    delete relayerArray[i];
+    removeRelayer();
   }
 
   /**
@@ -143,11 +143,17 @@ contract Relection {
     return uint256(blockhash(blockNum));
   }
 
-  function relayerIndex(address _addr) internal view returns (uint256) {
-    uint256 i = 0;
-    while (relayerArray[i] != _addr) {
-      i++;
-    }
-    return i;
+  function removeRelayer() internal {
+    uint256 i = relayers[msg.sender].index;
+    require(relayerArray[i] == msg.sender);
+
+    // Replace with last relayer in array, and remove last relayer
+    relayerArray[i] = relayerArray[relayerArray.length - 1];
+    relayers[relayerArray[i]].index = i;
+
+    delete relayerArray[relayerArray.length - 1];
+    relayerArray.length = 0;
+
+    delete relayers[msg.sender];
   }
 }
