@@ -9,15 +9,15 @@ contract RelectionMock is Relection {
   }
 
   uint256 blockNum;
-  mapping(uint256 => Seed) seeds;
+  mapping(uint256 => mapping(bytes32 => Seed)) seeds;
 
-  function setSeed(uint256 _blockNum, uint256 seed) external {
-    seeds[_blockNum] = Seed(seed, true);
+  function setSeed(uint256 _blockNum, uint256 seed, bytes32 _salt) external {
+    seeds[_blockNum][_salt] = Seed(seed, true);
   }
 
-  function getSeed(uint256 _blockNum) internal view returns (uint256) {
-    require(seeds[_blockNum].isSet);
-    return seeds[_blockNum].value; 
+  function getSeed(uint256 _blockNum, bytes32 _salt) internal view returns (uint256) {
+    require(seeds[_blockNum][_salt].isSet);
+    return seeds[_blockNum][_salt].value;
   }
 
   function setBlockNumber(uint256 _blockNum) external {

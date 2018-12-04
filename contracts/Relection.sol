@@ -55,23 +55,25 @@ contract Relection {
   /**
    * @dev Returns true if relayer is elected.
    * @param _addr Address of relayer
+   * @param _salt Additional param to determine relayer, e.g. hash of tx to be relayed.
    */
-  function isElected(address _addr) public view isRegistered(_addr) returns (bool) {
-    address elected = getElect();
+  function isElected(address _addr, bytes32 _salt) public view isRegistered(_addr) returns (bool) {
+    address elected = getElect(_salt);
     return _addr == elected;
   }
 
   /**
    * @dev Returns currently elected relayer, or address(0)
    *      if no relayer is elected.
+   * @param _salt e.g. tx hash.
    */
-  function getElect() public view returns (address) {
+  function getElect(bytes32 _salt) public view returns (address) {
     if (relayerArray.length == 0) {
       return address(0);
     }
 
     uint256 periodStart = getPeriodStart();
-    uint256 seed = getSeed(periodStart - 1);
+    uint256 seed = getSeed(periodStart - 1, _salt);
     uint256 i = seed % relayerArray.length;
 
     // Skip relayers starting from index i to find
@@ -145,8 +147,8 @@ contract Relection {
     return block.number;
   }
 
-  function getSeed(uint256 blockNum) internal view returns (uint256) {
-    return uint256(blockhash(blockNum));
+  function getSeed(uint256 blockNum, bytes32 _salt) internal view returns (uint256) {
+    return uint256(keccak256(abi.encodePacked(blockhash(blockNum), _salt)));
   }
 
   function removeRelayer() internal {
